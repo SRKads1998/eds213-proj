@@ -13,11 +13,11 @@ We used a variety of different songs and albums across different eras of hip-hop
 │   ├── hip_hop_track_list.csv
 │   ├── sample_list.csv
 │   ├── song_query_list.csv
-├── EDS223-HW2.Rproj
+├── EDS213-proj.Rproj
 ├── database
 │   ├── database.db
-├── analysis.qmd
-├── data_viz.pdf
+├── sample_query.sql
+├── visual.qmd
 ├── README.md
 
 ```
