@@ -1,0 +1,14 @@
+---
+title: "working"
+author: "Stephan Kadonoff"
+format: html
+editor: visual
+---
+
+## Working/cleaning
+
+```{r}
+# read in the CSVs and stuff
+
+
+```
