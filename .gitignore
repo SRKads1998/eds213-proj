@@ -2,12 +2,18 @@
 .Rhistory
 .Rapp.history
 
-# data folder 
-/data
 
 # Session Data files
 .RData
 .RDataTmp
+
+# test sql files
+SELECT.sql
+proj test.sql
+
+# plots
+plot1.png
+plot2.png
 
 # User-specific files
 .Ruserdata
