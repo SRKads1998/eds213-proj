@@ -1,0 +1,208 @@
+---
+title: "data_viz"
+author: "Stephan Kadonoff"
+format: html
+editor: visual
+---
+
+```{r}
+library(tidyverse)
+library(DBI)
+library(dbplyr)
+library(duckdb)
+library(janitor)
+library(showtext)
+
+db_path <- file.path("C:/Users/kadon/OneDrive/Documents/MEDS/EDS-213/eds213-proj/database/database.db")
+conn <- DBI::dbConnect(duckdb::duckdb(), dbdir = db_path)
+
+dbListTables(conn)
+```
+
+```{r}
+song_list <- tbl(conn, "song_list") %>%
+  collect() %>%
+  clean_names()
+  
+hip_hop_track_list <- tbl(conn, "hip_hop_track_list") %>%
+  collect() %>%
+  clean_names()
+
+sample_list <- tbl(conn, "sample_list") %>%
+  collect() %>%
+  clean_names()
+
+names(hip_hop_track_list)
+
+names(sample_list)
+```
+
+```{r}
+query_1 <- hip_hop_track_list %>%
+  arrange(desc(duration_ms)) %>%
+  mutate(duration_seconds = duration_ms / 1000) %>%
+  select(track_name, artist_name, duration_seconds) %>%
+  slice_head(n = 10)
+
+query_1
+```
+
+
+```{r}
+query_2 <- hip_hop_track_list %>%
+  left_join(sample_list, by = c("song_tracking_id" = "song_id"),
+            suffix = c("_track", "_sample")) %>%
+  group_by(track_name_track, artist_name_track, duration_ms_track) %>%
+  summarize(sample_duration_seconds = sum(duration_ms_sample, na.rm = TRUE) / 1000,
+            .groups = "drop") %>%
+  mutate(track_duration_seconds = duration_ms_track / 1000,
+         total_duration_seconds = track_duration_seconds + sample_duration_seconds) %>%
+  rename(track_name = track_name_track, artist_name = artist_name_track) %>%
+  arrange(desc(total_duration_seconds)) %>%
+  slice_head(n = 10)
+
+query_2
+```
+
+```{r}
+names(hip_hop_track_list %>% 
+        left_join(sample_list, by = c("song_tracking_id" = "song_id"),
+                  suffix = c("_track", "_sample")))
+```
+
+```{r}
+# Load a music-themed font
+font_add_google("Bebas Neue", "bebas")
+font_add_google("Lato", "lato")
+showtext_auto()
+```
+
+```{r}
+# Shared theme
+theme_vinyl <- function() {
+  theme_minimal() +
+  theme(
+    plot.background    = element_rect(fill = "#1a1a1a", color = NA),
+    panel.background   = element_rect(fill = "#1a1a1a", color = NA),
+    panel.grid.major.y = element_blank(),
+    panel.grid.major.x = element_line(color = "#333333"),
+    panel.grid.minor   = element_blank(),
+    text               = element_text(color = "#f5e6c8", family = "lato"),
+    plot.title         = element_text(family = "bebas", size = 18, color = "#e8a838"),
+    plot.subtitle      = element_text(size = 11, color = "#a89070"),
+    axis.text          = element_text(color = "#f5e6c8", size = 9),
+    axis.title         = element_text(color = "#a89070", size = 10),
+    plot.margin        = margin(20, 30, 20, 20)
+  )
+}
+
+accent_col <- "#e8a838"
+stem_col   <- "#5c4a2a"
+
+# --- Query 1 ---
+p1 <- query_1 %>%
+  mutate(track_name = fct_reorder(track_name, duration_seconds)) %>%
+  ggplot(aes(x = duration_seconds, y = track_name)) +
+  geom_segment(aes(x = 0, xend = duration_seconds, yend = track_name),
+               color = stem_col, linewidth = 0.8) +
+  geom_point(color = accent_col, size = 4) +
+  labs(
+    title    = "TOP 10 LONGEST HIP HOP TRACKS",
+    subtitle = "By track duration",
+    x        = "Duration (seconds)",
+    y        = NULL
+  ) +
+  theme_vinyl()
+
+# --- Query 2 ---
+p2 <- query_2 %>%
+  mutate(track_name = fct_reorder(track_name, total_duration_seconds)) %>%
+  pivot_longer(cols = c(track_duration_seconds, sample_duration_seconds),
+               names_to = "type", values_to = "seconds") %>%
+  mutate(type = recode(type,
+    "track_duration_seconds"  = "Track",
+    "sample_duration_seconds" = "Samples"
+  )) %>%
+  ggplot(aes(x = seconds, y = track_name, fill = type)) +
+  geom_col(width = 0.5) +
+  geom_point(
+    data = query_2 %>% mutate(track_name = fct_reorder(track_name, total_duration_seconds)),
+    aes(x = total_duration_seconds, y = track_name),
+    inherit.aes = FALSE, color = accent_col, size = 4
+  ) +
+  scale_fill_manual(values = c("Track" = "#5c4a2a", "Samples" = "#e8a838")) +
+  labs(
+    title    = "TOP 10 LONGEST TRACKS + CUMULATIVE SAMPLE RUNTIME",
+    subtitle = "Stacked by track duration and total sample duration",
+    x        = "Duration (seconds)",
+    y        = NULL,
+    fill     = NULL
+  ) +
+  theme_vinyl() +
+  theme(legend.position      = "top",
+        legend.background    = element_rect(fill = "#1a1a1a", color = NA),
+        legend.key           = element_rect(fill = "#1a1a1a", color = NA))
+```
+
+```{r}
+p1
+p2
+
+ggsave("plot1.png", plot = p1, width = 10, height = 6, dpi = 300, bg = bg_col)
+ggsave("plot2.png", plot = p2, width = 10, height = 6, dpi = 300, bg = bg_col)
+```
+
+```{r}
+# --- Query 1 ---
+p1 <- query_1 %>%
+  mutate(track_name = fct_reorder(track_name, desc(duration_seconds))) %>%
+  ggplot(aes(x = track_name, y = duration_seconds)) +
+  geom_segment(aes(x = track_name, xend = track_name, y = 0, yend = duration_seconds),
+               color = stem_col, linewidth = 0.8) +
+  geom_point(color = accent_col, size = 4) +
+  labs(
+    title    = "TOP 10 LONGEST HIP HOP TRACKS",
+    subtitle = "By track duration",
+    x        = NULL,
+    y        = "Duration (seconds)"
+  ) +
+  theme_vinyl() +
+  theme(axis.text.x = element_text(angle = 35, hjust = 1, size = 12),
+        axis.text.y = element_text(size = 12),
+        axis.title  = element_text(size = 13))
+
+# --- Query 2 ---
+p2 <- query_2 %>%
+  mutate(track_name = fct_reorder(track_name, desc(total_duration_seconds))) %>%
+  pivot_longer(cols = c(track_duration_seconds, sample_duration_seconds),
+               names_to = "type", values_to = "seconds") %>%
+  mutate(type = recode(type,
+    "track_duration_seconds"  = "Track",
+    "sample_duration_seconds" = "Samples"
+  )) %>%
+  ggplot(aes(x = track_name, y = seconds, fill = type)) +
+  geom_col(width = 0.5) +
+  scale_fill_manual(values = c("Track" = fill_track, "Samples" = fill_sample)) +
+  labs(
+    title    = "TOP 10 TRACKS + CUMULATIVE SAMPLE RUNTIME",
+    subtitle = "Stacked by track duration and total sample duration",
+    x        = NULL,
+    y        = "Duration (seconds)",
+    fill     = NULL
+  ) +
+  theme_vinyl() +
+  theme(
+    axis.text.x       = element_text(angle = 35, hjust = 1, size = 12),
+    axis.text.y       = element_text(size = 12),
+    axis.title        = element_text(size = 13),
+    legend.position   = "top",
+    legend.background = element_rect(fill = bg_col, color = NA),
+    legend.key        = element_rect(fill = bg_col, color = NA)
+  )
+
+p1
+p2
+```
+
+
+
