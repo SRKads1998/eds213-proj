@@ -24,7 +24,7 @@ We used a variety of different songs and albums across different eras of hip-hop
 
 ### Data Access
 
-All data is accessible and freely downloadable from this repository. The three csvs utilized as the dataset are all original creations by myself. Song information was collected from open sources, and sample lists were found by searching individual song names on the WhoSampled.com website. 
+All data is accessible and freely downloadable from this repository. The three csvs utilized as the dataset are all original creations by myself. Song information was collected from open sources, and sample lists were found by searching individual song names on the WhoSampled.com website. The packages and versions needed to run this analysis may be found in the requirements.txt file. 
 
 ### References & Acknowledgements 
 

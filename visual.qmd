@@ -148,61 +148,18 @@ p2 <- query_2 %>%
 p1
 p2
 
-ggsave("plot1.png", plot = p1, width = 10, height = 6, dpi = 300, bg = bg_col)
-ggsave("plot2.png", plot = p2, width = 10, height = 6, dpi = 300, bg = bg_col)
+ggsave("plot1.png", plot = p1, width = 10, height = 6, dpi = 300)
+ggsave("plot2.png", plot = p2, width = 10, height = 6, dpi = 300)
 ```
 
+#### Dependencies
 ```{r}
-# --- Query 1 ---
-p1 <- query_1 %>%
-  mutate(track_name = fct_reorder(track_name, desc(duration_seconds))) %>%
-  ggplot(aes(x = track_name, y = duration_seconds)) +
-  geom_segment(aes(x = track_name, xend = track_name, y = 0, yend = duration_seconds),
-               color = stem_col, linewidth = 0.8) +
-  geom_point(color = accent_col, size = 4) +
-  labs(
-    title    = "TOP 10 LONGEST HIP HOP TRACKS",
-    subtitle = "By track duration",
-    x        = NULL,
-    y        = "Duration (seconds)"
-  ) +
-  theme_vinyl() +
-  theme(axis.text.x = element_text(angle = 35, hjust = 1, size = 12),
-        axis.text.y = element_text(size = 12),
-        axis.title  = element_text(size = 13))
-
-# --- Query 2 ---
-p2 <- query_2 %>%
-  mutate(track_name = fct_reorder(track_name, desc(total_duration_seconds))) %>%
-  pivot_longer(cols = c(track_duration_seconds, sample_duration_seconds),
-               names_to = "type", values_to = "seconds") %>%
-  mutate(type = recode(type,
-    "track_duration_seconds"  = "Track",
-    "sample_duration_seconds" = "Samples"
-  )) %>%
-  ggplot(aes(x = track_name, y = seconds, fill = type)) +
-  geom_col(width = 0.5) +
-  scale_fill_manual(values = c("Track" = fill_track, "Samples" = fill_sample)) +
-  labs(
-    title    = "TOP 10 TRACKS + CUMULATIVE SAMPLE RUNTIME",
-    subtitle = "Stacked by track duration and total sample duration",
-    x        = NULL,
-    y        = "Duration (seconds)",
-    fill     = NULL
-  ) +
-  theme_vinyl() +
-  theme(
-    axis.text.x       = element_text(angle = 35, hjust = 1, size = 12),
-    axis.text.y       = element_text(size = 12),
-    axis.title        = element_text(size = 13),
-    legend.position   = "top",
-    legend.background = element_rect(fill = bg_col, color = NA),
-    legend.key        = element_rect(fill = bg_col, color = NA)
-  )
-
-p1
-p2
+writeLines(capture.output(sessionInfo()), "requirements.txt")
 ```
+
+
+
+
 
 
 
